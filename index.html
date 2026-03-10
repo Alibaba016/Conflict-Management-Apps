@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* Dein CSS unverändert */
+body { font-family: Arial, sans-serif; margin: 20px; padding-bottom: 80px; }
+.item { margin-top: 15px; margin-bottom: 15px; }
+label { display: block; margin-bottom: 16px; font-weight: bold; }
+.options { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+.options label { font-weight: normal; font-size: 0.85em; white-space: normal; margin-bottom: 0; }
+.missing-item { background-color: #ffcccc !important; border: 2px solid red; padding: 10px; border-radius: 5px; max-width: 794px; display: block; }
+.options { display: flex; flex-direction: column; gap: 6px; }
+.options label { font-weight: normal; font-size: 0.85em; white-space: normal; }
+#result { margin-top: 30px; font-size: 1.1em; color: #000000; max-width: 794px; }
+canvas { margin-top: 0; width: 794px; max-width: 794px; display: block; margin-left: 0; margin-right: auto; }
+.info-box { background-color: #FFD966 !important; padding: 12px; border-radius: 5px; margin-bottom: 30px; max-width: 794px; font-size: 0.9em; }
+.footer-box { background-color: #fde70e !important; padding: 12px; border-radius: 5px; margin-top: 10px; margin-bottom: 0px; max-width: 794px; font-size: 0.8em; }
+.header-highlight { background-color: #FFD966 !important; padding: 12px; border-radius: 5px; margin-top: 40px; margin-bottom: 30px; max-width: 794px; margin-left: auto; margin-right: auto; font-size: 1.1em; }
+.interpretation-box {
+    padding: 8px; /* weniger Innenabstand */
+    border-radius: 5px;
+    margin-top: 10px; /* etwas weniger Abstand nach oben */
+    max-width: 794px;
+    display: none;
+    font-size: 0.85em; /* etwas kleinere Schrift */
+    line-height: 1.25em; /* kompakter Zeilenabstand */
+}
+.interpretation-green {
+    background-color: #B4E5A2 !important;
+}
+.interpretation-yellow {
+    background-color: #fde70e !important;
+}
+.interpretation-red {
+    background-color: #ff9999 !important;
+}
+/* Bei Print trotzdem lesbar halten */
+@media print {
+    .interpretation-box {
+        font-size: 0.85em;
+        line-height: 1.25em;
+        padding: 8px;
+    }
+}
+.interpretation-help { background-color: #f5f5f5; padding: 3px; border-radius: 5px; margin-top: 6px; max-width: 794px; border: 1px solid #ccc; font-size: 0.8em; line-height: 1.1em; }
+.header-highlight {
+    background-color: #FFD966 !important;
+    padding: 12px;
+    border-radius: 5px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    max-width: 794px;
+    font-size: 1.5em;
+    margin-left: 0; /* statt auto */
+    margin-right: auto; /* optional, damit rechts nicht gepresst wird */
+    text-align: left; /* sicherstellen, dass der Text links steht */
+}
+.button-auswerten { background-color: orange; color: white; font-size: 1.1em; padding: 8px 20px; width: 150px; height: 38px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 15px; }
+.info-title { font-size: 1.4em; font-weight: bold; margin-bottom: 10px; }
+@media print {
+* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+canvas { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+.info-box { background-color: #FFD966 !important; color: black !important; }
+.footer-box { background-color: #fde70e !important; color: black !important; }
+.header-highlight { background-color: #FFD966 !important; color: black !important; }
+.interpretation-green { background-color: #B4E5A2 !important; color: black !important; }
+.interpretation-yellow { background-color: #fde70e !important; color: black !important; }
+.interpretation-red { background-color: #ff9999 !important; color: black !important; }
+.interpretation-help { background-color: #f5f5f5 !important; color: black !important; }
+.missing-item { background-color: #ffcccc !important; color: black !important; }
+}
+</style>
+</head>
+<body>
+<div class="info-box" id="infoBox">
+<div class="info-title">Assessment Konstruktive Kontroverse in Teams</div>
+Das Assessment Konstruktive Kontroverse im Team dient dazu zu erheben, wie Ihr Team mit unterschiedlichen Meinungen bei kontroversen Themen umgeht.<br><br>
+Sie finden nachfolgend acht Aussagen. Bitte beziehen Sie diese Aussagen auf ein ganz bestimmtes Team, dem Sie angehören.<br><br>
+Beurteilen Sie die Aussagen auf der Skala von "stimme nicht zu" bis "stimme zu". Es gibt keine richtigen oder falschen Antworten. Beurteilen Sie die Aussagen so, wie es für Sie zutrifft.<br><br>
+Sie können die Ergebnisse sehen, wenn Sie nach Beurteilung der letzten Frage den Button "Auswerten" drücken.
+</div>
+<div id="progressDisplay">Frage 1 von 8</div>
+<form id="questionnaire">
+<div id="itemContainer"></div>
+<button type="button" id="nextBtn" class="button-auswerten">Weiter</button>
+</form>
+<div id="footerBefore" class="footer-box">
+🎓 Quelle Skala Konstruktive Kontroverse: Tjosvold & Yu (2007); Vollmer, Gockel & Manser (2025); App-Version: Prof. Dr. Albert Vollmer, Hochschule für Angewandte Psychologie FHNW, 2026.<br>
+❗️ Datenschutzhinweis: Die eingegebenen Daten werden nirgends gespeichert und werden beim Schliessen der App gelöscht.
+</div>
+<div id="result"></div>
+<div id="interpretation-green" class="interpretation-box interpretation-green">✅ <strong>Grün:</strong> Es gibt insgesamt eine hohe Ausprägung der Konstruktiven Kontroverse in Ihrem Team.</div>
+<div id="interpretation-yellow" class="interpretation-box interpretation-yellow">⚠️ <strong>Gelb:</strong> Es gibt insgesamt eine mittlere Ausprägung der Konstruktiven Kontroverse in Ihrem Team.</div>
+<div id="interpretation-red" class="interpretation-box interpretation-red">⛔ <strong>Rot:</strong> Es besteht insgesamt eine niedrige Ausprägung der Konstruktiven Kontroverse in Ihrem Team.</div>
+<canvas id="itemsChart"></canvas>
+<div id="interpretation-help" class="interpretation-help" style="display:none;">
+<h2>📌 Interpretationshilfe</h2>
+<p>Nachfolgend finden Sie Anregungen zur Interpretation der Ergebnisse des Assessments Konstruktive Kontroverse in Ihrem Team.</p>
+<h3>1. Bei positiven Werten (grün):</h3>
+<ul>
+<li>Hier besteht kein unmittelbarer Handlungsbedarf.</li>
+<li>Wie gelingt es Ihrem Team, diese hohe Ausprägung zu erzielen?</li>
+<li>Was kann Ihr Team tun, um diese hohe Ausprägung weiterhin zu behalten?</li>
+</ul>
+<h3>2. Bei mittleren Werten (gelb):</h3>
+<ul>
+<li>Hier sollten evtl. Massnahmen zur Verbesserung getroffen werden.</li>
+<li>Woran kann es liegen, dass der Wert im mittleren Bereich liegt?</li>
+<li>Was kann Ihr Team tun, um den Wert zu verbessern?</li>
+</ul>
+<h3>3. Bei kritischen Werten (rot):</h3>
+<ul>
+<li>Hier besteht Handlungsbedarf.</li>
+<li>Woran kann es liegen, dass der Wert so niedrig ist?</li>
+<li>Welche Massnahmen kann Ihr Team treffen, um den Wert zu verbessern?</li>
+</ul>
+</div>
+</div>
+<div id="footerAfter" class="footer-box" style="display:none;">
+🎓 Quelle Skala Konstruktive Kontroverse: Tjosvold & Yu (2007); Vollmer, Gockel & Manser (2025); App-Version: Prof. Dr. Albert Vollmer, Hochschule für Angewandte Psychologie FHNW, 2026.<br>
+❗️ Datenschutzhinweis: Die eingegebenen Daten werden nirgends gespeichert und werden beim Schliessen der App gelöscht.
+</div>
+<script>
+const questions = [
+"Alle Teammitglieder äusseren ihre Ansichten klar gegenüber anderen im Team.",
+"Im Team hören wir aufmerksam auf die Meinung eines jeden.",
+"Die Teammitglieder versuchen, gegenseitig ihre Anliegen zu verstehen.",
+"Wir versuchen, die Ideen aller zu nutzen.",
+"Auch wenn wir uns während einer Diskussion im Team uneinig sind, zeigen wir gegenseitigen Respekt.",
+"Wir erarbeiten Entscheidungen, die von allen akzeptiert werden.",
+"Alle Ansichten werden gehört, auch wenn sie von einer Minderheit vertreten werden.",
+"Wir nutzen unsere verschiedenen Blickwinkel, um ein Problem zu verstehen."
+];
+let currentIndex = 0;
+let answers = [];
+function showItem(index){
+document.getElementById('itemContainer').innerHTML = `
+<div class="item">
+<label>${index+1}. ${questions[index]}</label>
+<div class="options">
+${[1,2,3,4,5].map(v=>`
+<label>
+<input type="radio" name="q${index+1}" value="${v}" ${answers[index]===v?'checked':''}>
+${["stimme nicht zu","stimme eher nicht zu","weder/noch","stimme eher zu","stimme zu"][v-1]}
+</label>
+`).join('')}
+</div>
+</div>`;
+document.getElementById('progressDisplay').innerText = `Frage ${index+1} von ${questions.length}`;
+document.getElementById('nextBtn').textContent = (index===questions.length-1) ? 'Auswerten' : 'Weiter';
+}
+document.getElementById('nextBtn').addEventListener('click', function(){
+const answerEl = document.querySelector(`input[name="q${currentIndex+1}"]:checked`);
+if(!answerEl){ alert(`Bitte beantworten Sie Frage ${currentIndex+1}, bevor Sie fortfahren.`); return; }
+answers[currentIndex] = parseInt(answerEl.value);
+currentIndex++;
+if(currentIndex < questions.length){ showItem(currentIndex); }
+else { calculateResults(); }
+});
+function splitLabel(text, maxLineLength){
+const words = text.split(" ");
+let lines=[], currentLine="";
+words.forEach(word=>{
+if((currentLine+word).length > maxLineLength){
+lines.push(currentLine.trim()); currentLine = word+" ";
+} else { currentLine += word+" "; }
+});
+if(currentLine) lines.push(currentLine.trim());
+return lines;
+}
+function calculateResults() {
+    let sum=0, count=0, itemValuesRaw=[], barColors=[], fehlendeFragen=[];
+    for(let i=0;i<questions.length;i++){
+        if(typeof answers[i]==="undefined"){
+            fehlendeFragen.push(i+1);
+        } else {
+            let rawVal = answers[i];
+            let chartVal = rawVal===1 ? 1.05 : rawVal;
+            sum+=rawVal; count++;
+            itemValuesRaw.push(chartVal);
+            if(rawVal<2.33) barColors.push("red");
+            else if(rawVal<3.66) barColors.push("#fde70e");
+            else barColors.push("green");
+        }
+    }
+    if(fehlendeFragen.length>0){ 
+        alert("Bitte noch folgende Frage(n) beantworten: " + fehlendeFragen.join(", ")); 
+        return; 
+    }
+    const mean = (sum/count).toFixed(2);
+    let meanColor, colorCategory;
+    if(mean<2.33){ meanColor="red"; colorCategory="red"; }
+    else if(mean<3.66){ meanColor="#fde70e"; colorCategory="yellow"; }
+    else { meanColor="green"; colorCategory="green"; }
+    const multiLineLabels = questions.map(t=>splitLabel(t,50));
+    const popup = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+    popup.document.write('<html><head><title>Ergebnisse</title><style>'+document.querySelector('style').innerHTML+'</style></head><body>');
+
+    // Ergebnis-Header-Kasten exakt wie andere Boxen
+popup.document.write(`<h2 class='header-highlight'>Assessment Konstruktive Kontroverse im Team - Ergebnisse</h2>
+Mittelwert Konstruktive Kontroverse im Team (Skala 1-5): 
+<strong style='color:${meanColor}'>${mean}</strong>`);
+popup.document.write(`<div class="interpretation-box interpretation-${colorCategory}" style="display:block;">${document.getElementById('interpretation-'+colorCategory).innerHTML}</div>`);
+
+popup.document.write(
+    `<div style="text-align:center; margin-top:20px; margin-bottom:0px; font-size:0.8em;">
+        <span style="display:inline-block; width:40px; height:12px; background-color:red; margin-right:5px;"></span>
+        kritisch&nbsp;&nbsp;
+        <span style="display:inline-block; width:40px; height:12px; background-color:#fde70e; margin-right:5px;"></span>
+        mittel&nbsp;&nbsp;
+        <span style="display:inline-block; width:40px; height:12px; background-color:green; margin-right:5px;"></span>
+        positiv
+    </div>`
+);
+    
+
+// Chart jetzt direkt nach Interpretation
+    popup.document.write('<canvas id="popupChart" style="margin-top:0;"></canvas>');
+    
+// Interpretationshilfe danach
+popup.document.write(`
+    <div id="interpretation-help" class="interpretation-help" style="display:block;">
+        ${document.getElementById('interpretation-help').innerHTML}
+    </div>
+`);
+// Footer direkt darunter
+popup.document.write(`
+    <div class="footer-box">
+        ${document.getElementById('footerAfter').innerHTML}
+    </div>
+`);
+    // Chart.js Script
+    popup.document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script><script>');
+    popup.document.write(`
+        const ctx = document.getElementById('popupChart').getContext('2d');
+        new Chart(ctx, {
+            type:'bar',
+            data:{ labels:${JSON.stringify(multiLineLabels)}, datasets:[{ data:${JSON.stringify(itemValuesRaw)}, backgroundColor:${JSON.stringify(barColors)} }]},
+            options:{
+                responsive: false,   // 📌 verhindert Größenänderung
+    maintainAspectRatio: false, // erlaubt beliebige Höhe unabhängig vom Verhältnis
+indexAxis:'y',
+                plugins:{ legend:{ display:false }},
+                scales:{
+                    x:{ min:1,max:5,ticks:{ stepSize:1, callback:v=>{
+                        const labels=["stimme nicht zu","stimme eher nicht zu","weder/noch","stimme eher zu","stimme zu"];
+                        return labels[v-1]||v;
+                    }}},
+                    y:{ ticks:{ autoSkip:false }}
+                }
+            }
+        });
+    `);
+    popup.document.write('<\/script></body></html>');
+    popup.document.close();
+}
+showItem(currentIndex);
+</script>
+</body>
+</html>
